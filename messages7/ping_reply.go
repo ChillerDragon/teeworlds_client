@@ -7,36 +7,37 @@ import (
 )
 
 type PingReply struct {
-	ChunkHeader *chunk7.ChunkHeader
+	ChunkHeader chunk7.ChunkHeader
 }
 
-func (msg PingReply) MsgId() int {
+func (msg *PingReply) MsgId() int {
 	return network7.MsgSysPingReply
 }
 
-func (msg PingReply) MsgType() network7.MsgType {
+func (msg *PingReply) MsgType() network7.MsgType {
 	return network7.TypeNet
 }
 
-func (msg PingReply) System() bool {
+func (msg *PingReply) System() bool {
 	return true
 }
 
-func (msg PingReply) Vital() bool {
+func (msg *PingReply) Vital() bool {
 	return true
 }
 
-func (msg PingReply) Pack() []byte {
+func (msg *PingReply) Pack() []byte {
 	return []byte{}
 }
 
-func (msg *PingReply) Unpack(u *packer.Unpacker) {
+func (msg *PingReply) Unpack(u *packer.Unpacker) error {
+	return nil
 }
 
 func (msg *PingReply) Header() *chunk7.ChunkHeader {
-	return msg.ChunkHeader
+	return &msg.ChunkHeader
 }
 
-func (msg *PingReply) SetHeader(header *chunk7.ChunkHeader) {
+func (msg *PingReply) SetHeader(header chunk7.ChunkHeader) {
 	msg.ChunkHeader = header
 }

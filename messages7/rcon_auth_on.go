@@ -7,36 +7,37 @@ import (
 )
 
 type RconAuthOn struct {
-	ChunkHeader *chunk7.ChunkHeader
+	ChunkHeader chunk7.ChunkHeader
 }
 
-func (msg RconAuthOn) MsgId() int {
+func (msg *RconAuthOn) MsgId() int {
 	return network7.MsgSysRconAuthOn
 }
 
-func (msg RconAuthOn) MsgType() network7.MsgType {
+func (msg *RconAuthOn) MsgType() network7.MsgType {
 	return network7.TypeNet
 }
 
-func (msg RconAuthOn) System() bool {
+func (msg *RconAuthOn) System() bool {
 	return true
 }
 
-func (msg RconAuthOn) Vital() bool {
+func (msg *RconAuthOn) Vital() bool {
 	return true
 }
 
-func (msg RconAuthOn) Pack() []byte {
+func (msg *RconAuthOn) Pack() []byte {
 	return []byte{}
 }
 
-func (msg *RconAuthOn) Unpack(u *packer.Unpacker) {
+func (msg *RconAuthOn) Unpack(u *packer.Unpacker) error {
+	return nil
 }
 
 func (msg *RconAuthOn) Header() *chunk7.ChunkHeader {
-	return msg.ChunkHeader
+	return &msg.ChunkHeader
 }
 
-func (msg *RconAuthOn) SetHeader(header *chunk7.ChunkHeader) {
+func (msg *RconAuthOn) SetHeader(header chunk7.ChunkHeader) {
 	msg.ChunkHeader = header
 }

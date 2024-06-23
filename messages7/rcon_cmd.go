@@ -1,49 +1,46 @@
 package messages7
 
 import (
-	"slices"
-
 	"github.com/teeworlds-go/go-teeworlds-protocol/chunk7"
 	"github.com/teeworlds-go/go-teeworlds-protocol/network7"
 	"github.com/teeworlds-go/go-teeworlds-protocol/packer"
 )
 
 type RconCmd struct {
-	ChunkHeader *chunk7.ChunkHeader
+	ChunkHeader chunk7.ChunkHeader
 
 	Command string
 }
 
-func (msg RconCmd) MsgId() int {
+func (msg *RconCmd) MsgId() int {
 	return network7.MsgSysRconCmd
 }
 
-func (msg RconCmd) MsgType() network7.MsgType {
+func (msg *RconCmd) MsgType() network7.MsgType {
 	return network7.TypeNet
 }
 
-func (msg RconCmd) System() bool {
+func (msg *RconCmd) System() bool {
 	return true
 }
 
-func (msg RconCmd) Vital() bool {
+func (msg *RconCmd) Vital() bool {
 	return true
 }
 
-func (msg RconCmd) Pack() []byte {
-	return slices.Concat(
-		packer.PackStr(msg.Command),
-	)
+func (msg *RconCmd) Pack() []byte {
+	return packer.PackString(msg.Command)
 }
 
-func (msg *RconCmd) Unpack(u *packer.Unpacker) {
-	msg.Command = u.GetString()
+func (msg *RconCmd) Unpack(u *packer.Unpacker) (err error) {
+	msg.Command, err = u.NextString()
+	return err
 }
 
 func (msg *RconCmd) Header() *chunk7.ChunkHeader {
-	return msg.ChunkHeader
+	return &msg.ChunkHeader
 }
 
-func (msg *RconCmd) SetHeader(header *chunk7.ChunkHeader) {
+func (msg *RconCmd) SetHeader(header chunk7.ChunkHeader) {
 	msg.ChunkHeader = header
 }

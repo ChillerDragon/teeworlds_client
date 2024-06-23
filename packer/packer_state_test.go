@@ -1,40 +1,34 @@
 package packer
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // rest
 
 func TestUnpackRest(t *testing.T) {
-	u := Unpacker{}
-	u.Reset([]byte{0x01, 0xff, 0xaa})
+	u := NewUnpacker([]byte{0x01, 0xff, 0xaa})
 
 	{
-		got := u.GetInt()
-		want := 1
-
-		if got != want {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err := u.NextInt()
+		require.NoError(t, err)
+		require.Equal(t, 1, got)
 	}
 
 	{
-		got := u.Rest()
 		want := []byte{0xff, 0xaa}
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got := u.Bytes()
+		require.Equal(t, want, got)
 	}
 }
 
 // client info
 
 func TestUnpackClientInfo(t *testing.T) {
-	u := Unpacker{}
-	u.Reset([]byte{
+	require := require.New(t)
+	u := NewUnpacker([]byte{
 		0x24, 0x00, 0x01, 0x00, 0x67, 0x6f, 0x70, 0x68, 0x65, 0x72, 0x00,
 		0x00, 0x40, 0x67, 0x72, 0x65, 0x65, 0x6e, 0x73, 0x77, 0x61, 0x72,
 		0x64, 0x00, 0x64, 0x75, 0x6f, 0x64, 0x6f, 0x6e, 0x6e, 0x79, 0x00,
@@ -47,175 +41,142 @@ func TestUnpackClientInfo(t *testing.T) {
 
 	{
 		// message id
-		got := u.GetInt()
 		want := 36
-
-		if got != want {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err := u.NextInt()
+		require.NoError(err)
+		require.Equal(want, got)
 
 		// client id
-		got = u.GetInt()
 		want = 0
+		got, err = u.NextInt()
+		require.NoError(err)
+		require.Equal(want, got)
 
-		if got != want {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
-
-		u.GetInt() // Local bool
-		u.GetInt() // Team int
+		_, err = u.NextBool() // Local bool
+		require.NoError(err)
+		_, err = u.NextInt() // Team int
+		require.NoError(err)
 	}
 
 	{
 		// name
-		got := u.GetString()
 		want := "gopher"
-
-		if got != want {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err := u.NextString()
+		require.NoError(err)
+		require.Equal(want, got)
 
 		// clan
-		got = u.GetString()
 		want = ""
+		got, err = u.NextString()
+		require.NoError(err)
+		require.Equal(want, got)
 
-		if got != want {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
 	}
 
 	{
 		// country
-		got := u.GetInt()
 		want := -1
-
-		if got != want {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err := u.NextInt()
+		require.NoError(err)
+		require.Equal(want, got)
 	}
 
 	{
 		// body
-		got := u.GetString()
 		want := "greensward"
-
-		if got != want {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err := u.NextString()
+		require.NoError(err)
+		require.Equal(want, got)
 	}
 }
 
 // unpack with state
 
 func TestUnpackSimpleInts(t *testing.T) {
-	u := Unpacker{}
-	u.Reset([]byte{0x01, 0x02, 0x03, 0x0f})
+	require := require.New(t)
+	u := NewUnpacker([]byte{0x01, 0x02, 0x03, 0x0f})
 
-	got := u.GetInt()
 	want := 1
+	got, err := u.NextInt()
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = u.GetInt()
 	want = 2
+	got, err = u.NextInt()
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = u.GetInt()
 	want = 3
+	got, err = u.NextInt()
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = u.GetInt()
 	want = 15
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
+	got, err = u.NextInt()
+	require.NoError(err)
+	require.Equal(want, got)
 }
 
 func TestUnpackString(t *testing.T) {
-	u := Unpacker{}
-	u.Reset([]byte{'f', 'o', 'o', 0x00})
+	require := require.New(t)
+	u := NewUnpacker([]byte{'f', 'o', 'o', 0x00})
 
-	got := u.GetString()
 	want := "foo"
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
+	got, err := u.NextString()
+	require.NoError(err)
+	require.Equal(want, got)
 }
 
 func TestUnpackTwoStrings(t *testing.T) {
-	u := Unpacker{}
-	u.Reset([]byte{'f', 'o', 'o', 0x00, 'b', 'a', 'r', 0x00})
+	require := require.New(t)
+	u := NewUnpacker([]byte{'f', 'o', 'o', 0x00, 'b', 'a', 'r', 0x00})
 
-	got := u.GetString()
 	want := "foo"
+	got, err := u.NextString()
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = u.GetString()
 	want = "bar"
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
+	got, err = u.NextString()
+	require.NoError(err)
+	require.Equal(want, got)
 }
 
 func TestUnpackMixed(t *testing.T) {
-	u := Unpacker{}
-	u.Reset([]byte{0x0F, 0x0F, 'f', 'o', 'o', 0x00, 'b', 'a', 'r', 0x00, 0x01})
+	require := require.New(t)
+	u := NewUnpacker([]byte{0x0F, 0x0F, 'f', 'o', 'o', 0x00, 'b', 'a', 'r', 0x00, 0x01})
 
 	// ints
 	{
-		got := u.GetInt()
 		want := 15
+		got, err := u.NextInt()
+		require.NoError(err)
+		require.Equal(want, got)
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
-
-		got = u.GetInt()
 		want = 15
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err = u.NextInt()
+		require.NoError(err)
+		require.Equal(want, got)
 	}
 
 	// strings
 	{
-		got := u.GetString()
 		want := "foo"
+		got, err := u.NextString()
+		require.NoError(err)
+		require.Equal(want, got)
 
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
-
-		got = u.GetString()
 		want = "bar"
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err = u.NextString()
+		require.NoError(err)
+		require.Equal(want, got)
 	}
 
 	// ints
 	{
-		got := u.GetInt()
 		want := 1
-
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got %v, wanted %v", got, want)
-		}
+		got, err := u.NextInt()
+		require.NoError(err)
+		require.Equal(want, got)
 	}
 }

@@ -12,8 +12,8 @@ type NetMessage interface {
 	System() bool
 	Vital() bool
 	Pack() []byte
-	Unpack(u *packer.Unpacker)
+	Unpack(u *packer.Unpacker) error
 
 	Header() *chunk7.ChunkHeader
-	SetHeader(header *chunk7.ChunkHeader)
+	SetHeader(header chunk7.ChunkHeader)
 }

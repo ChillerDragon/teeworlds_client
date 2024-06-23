@@ -1,15 +1,14 @@
 package messages7
 
 import (
-	"slices"
-
 	"github.com/teeworlds-go/go-teeworlds-protocol/chunk7"
 	"github.com/teeworlds-go/go-teeworlds-protocol/network7"
 	"github.com/teeworlds-go/go-teeworlds-protocol/packer"
+	"github.com/teeworlds-go/go-teeworlds-protocol/varint"
 )
 
 type SvClientInfo struct {
-	ChunkHeader *chunk7.ChunkHeader
+	ChunkHeader chunk7.ChunkHeader
 
 	ClientId              int
 	Local                 bool
@@ -53,66 +52,156 @@ func (info *SvClientInfo) Vital() bool {
 	return true
 }
 
-func (msg SvClientInfo) Pack() []byte {
-	return slices.Concat(
-		packer.PackInt(msg.ClientId),
-		packer.PackBool(msg.Local),
-		packer.PackInt(msg.Team),
-		packer.PackStr(msg.Name),
-		packer.PackStr(msg.Clan),
-		packer.PackInt(msg.Country),
-		packer.PackStr(msg.Body),
-		packer.PackStr(msg.Marking),
-		packer.PackStr(msg.Decoration),
-		packer.PackStr(msg.Hands),
-		packer.PackStr(msg.Feet),
-		packer.PackStr(msg.Eyes),
-		packer.PackBool(msg.CustomColorBody),
-		packer.PackBool(msg.CustomColorMarking),
-		packer.PackBool(msg.CustomColorDecoration),
-		packer.PackBool(msg.CustomColorHands),
-		packer.PackBool(msg.CustomColorFeet),
-		packer.PackBool(msg.CustomColorEyes),
-		packer.PackInt(msg.ColorBody),
-		packer.PackInt(msg.ColorMarking),
-		packer.PackInt(msg.ColorHands),
-		packer.PackInt(msg.ColorFeet),
-		packer.PackInt(msg.ColorEyes),
-		packer.PackBool(msg.Silent),
-	)
+func (msg *SvClientInfo) Pack() []byte {
+	p := packer.NewPacker(
+		make([]byte,
+			0,
+			8*varint.MaxVarintLen32+ // int
+				8*1+ // bool
+				len(msg.Name)+1+
+				len(msg.Clan)+1+
+				len(msg.Body)+1+
+				len(msg.Marking)+1+
+				len(msg.Decoration)+1+
+				len(msg.Hands)+1+
+				len(msg.Feet)+1+
+				len(msg.Eyes)+1,
+		))
+
+	p.AddInt(msg.ClientId)
+	p.AddBool(msg.Local)
+	p.AddInt(msg.Team)
+	p.AddString(msg.Name)
+	p.AddString(msg.Clan)
+	p.AddInt(msg.Country)
+	p.AddString(msg.Body)
+	p.AddString(msg.Marking)
+	p.AddString(msg.Decoration)
+	p.AddString(msg.Hands)
+	p.AddString(msg.Feet)
+	p.AddString(msg.Eyes)
+	p.AddBool(msg.CustomColorBody)
+	p.AddBool(msg.CustomColorMarking)
+	p.AddBool(msg.CustomColorDecoration)
+	p.AddBool(msg.CustomColorHands)
+	p.AddBool(msg.CustomColorFeet)
+	p.AddBool(msg.CustomColorEyes)
+	p.AddInt(msg.ColorBody)
+	p.AddInt(msg.ColorMarking)
+	p.AddInt(msg.ColorHands)
+	p.AddInt(msg.ColorFeet)
+	p.AddInt(msg.ColorEyes)
+	p.AddBool(msg.Silent)
+	return p.Bytes()
 }
 
-func (info *SvClientInfo) Unpack(u *packer.Unpacker) {
-	info.ClientId = u.GetInt()
-	info.Local = u.GetInt() != 0
-	info.Team = u.GetInt()
-	info.Name = u.GetString()
-	info.Clan = u.GetString()
-	info.Country = u.GetInt()
-	info.Body = u.GetString()
-	info.Marking = u.GetString()
-	info.Decoration = u.GetString()
-	info.Hands = u.GetString()
-	info.Feet = u.GetString()
-	info.Eyes = u.GetString()
-	info.CustomColorBody = u.GetInt() != 0
-	info.CustomColorMarking = u.GetInt() != 0
-	info.CustomColorDecoration = u.GetInt() != 0
-	info.CustomColorHands = u.GetInt() != 0
-	info.CustomColorFeet = u.GetInt() != 0
-	info.CustomColorEyes = u.GetInt() != 0
-	info.ColorBody = u.GetInt()
-	info.ColorMarking = u.GetInt()
-	info.ColorHands = u.GetInt()
-	info.ColorFeet = u.GetInt()
-	info.ColorEyes = u.GetInt()
-	info.Silent = u.GetInt() != 0
+func (info *SvClientInfo) Unpack(u *packer.Unpacker) (err error) {
+
+	info.ClientId, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.Local, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+
+	info.Team, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.Name, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Clan, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Country, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.Body, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Marking, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Decoration, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Hands, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Feet, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Eyes, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.CustomColorBody, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorMarking, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorDecoration, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorHands, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorFeet, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorEyes, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.ColorBody, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorMarking, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorHands, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorFeet, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorEyes, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.Silent, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (msg *SvClientInfo) Header() *chunk7.ChunkHeader {
-	return msg.ChunkHeader
+	return &msg.ChunkHeader
 }
 
-func (msg *SvClientInfo) SetHeader(header *chunk7.ChunkHeader) {
+func (msg *SvClientInfo) SetHeader(header chunk7.ChunkHeader) {
 	msg.ChunkHeader = header
 }

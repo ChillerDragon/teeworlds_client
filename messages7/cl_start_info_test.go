@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	"github.com/teeworlds-go/go-teeworlds-protocol/packer"
 )
 
@@ -44,10 +45,7 @@ func TestPackStartInfo(t *testing.T) {
 	}
 
 	got := info.Pack()
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
+	require.Equal(t, want, got)
 }
 
 func TestUnpackStartInfo(t *testing.T) {

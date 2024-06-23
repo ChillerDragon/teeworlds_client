@@ -1,125 +1,87 @@
 package packer
 
 import (
-	"slices"
+	"github.com/teeworlds-go/go-teeworlds-protocol/varint"
 )
-
-type Unpacker struct {
-	data []byte
-	idx  int
-}
-
-func (u *Unpacker) Reset(data []byte) {
-	u.data = slices.Clone(data)
-	u.idx = 0
-}
-
-// first byte of the current buffer
-func (u *Unpacker) byte() byte {
-	return u.data[u.idx]
-}
-
-// consume one byte
-func (u *Unpacker) getByte() byte {
-	b := u.data[u.idx]
-	u.idx++
-	return b
-}
-
-func (u *Unpacker) Data() []byte {
-	return u.data
-}
-
-func (u *Unpacker) Rest() []byte {
-	return u.data[u.idx:]
-}
 
 const (
-	Sanitize                = 1
-	SanitizeCC              = 2
-	SanitizeSkipWhitespaces = 4
+	// StringTerminator is the zero byte that terminates the string
+	StringTerminator byte = 0x00
+
+	// with how many bytes the packer is initialized
 )
 
-func (u *Unpacker) GetStringSanitized(sanitizeType int) string {
-	bytes := []byte{}
+var (
+	PackerBufferSize = 1024 * 2
+)
 
-	skipping := sanitizeType&SanitizeSkipWhitespaces != 0
-
-	for {
-		b := u.getByte()
-		if b == 0x00 {
-			break
-		}
-
-		if skipping {
-			if b == ' ' || b == '\t' || b == '\n' {
-				continue
-			}
-			skipping = false
-		}
-
-		if sanitizeType&SanitizeCC != 0 {
-			if b < 32 {
-				b = ' '
-			}
-		} else if sanitizeType&Sanitize != 0 {
-			if b < 32 && !(b == '\r') && !(b == '\n') && !(b == '\t') {
-				b = ' '
-			}
-		}
-
-		bytes = append(bytes, b)
+// NewPacker ceates a new Packer with a given default buffer size.
+// You can provide ONE optional buffer that is used instead of the default one
+func NewPacker(buf ...[]byte) *Packer {
+	var internalBuf []byte
+	if len(buf) > 0 {
+		internalBuf = buf[0]
+	} else {
+		internalBuf = make([]byte, 0, PackerBufferSize)
 	}
 
-	return string(bytes)
-}
-
-func (u *Unpacker) GetString() string {
-	return u.GetStringSanitized(Sanitize)
-}
-
-func (u *Unpacker) GetInt() int {
-	sign := int(u.byte()>>6) & 1
-	res := int(u.byte() & 0x3F)
-	// fake loop should only loop once
-	// its the poor mans goto hack
-	for {
-		if (u.byte() & 0x80) == 0 {
-			break
-		}
-		u.idx += 1
-		res |= int(u.byte()&0x7F) << 6
-
-		if (u.byte() & 0x80) == 0 {
-			break
-		}
-		u.idx += 1
-		res |= int(u.byte()&0x7F) << (6 + 7)
-
-		if (u.byte() & 0x80) == 0 {
-			break
-		}
-		u.idx += 1
-		res |= int(u.byte()&0x7F) << (6 + 7 + 7)
-
-		if (u.byte() & 0x80) == 0 {
-			break
-		}
-		u.idx += 1
-		res |= int(u.byte()&0x7F) << (6 + 7 + 7 + 7)
-		break
+	return &Packer{
+		buffer: internalBuf,
 	}
-
-	u.idx += 1
-	res ^= -sign
-	return res
 }
 
-func PackStr(str string) []byte {
-	return slices.Concat(
-		[]byte(str),
-		[]byte{0x00},
-	)
+// Packer compresses data
+type Packer struct {
+	buffer []byte
+}
+
+// Bytes returns the underlying buffer
+func (p *Packer) Bytes() []byte {
+	return p.buffer
+}
+
+// Reset internal buffer
+func (p *Packer) Reset(buf ...[]byte) {
+	if len(buf) > 0 {
+		p.buffer = append(p.buffer[:0], buf[0]...)
+	} else if p.buffer != nil {
+		p.buffer = p.buffer[:0]
+	} else {
+		p.buffer = make([]byte, 0, PackerBufferSize)
+	}
+}
+
+// Size len of the Buffer
+func (p *Packer) Size() int {
+	return len(p.buffer)
+}
+
+func (p *Packer) AddInt(i int) {
+	p.buffer = varint.AppendVarint(p.buffer, i)
+}
+
+func (p *Packer) AddByte(b byte) {
+	p.buffer = append(p.buffer, b)
+}
+
+func (p *Packer) AddString(s string) {
+	p.buffer = append(p.buffer, []byte(s)...)
+	p.buffer = append(p.buffer, StringTerminator) // string separator
+}
+
+func (p *Packer) AddBytes(data []byte) {
+	p.buffer = append(p.buffer, data...)
+}
+
+func (p *Packer) AddBool(b bool) {
+	if b {
+		p.buffer = append(p.buffer, 0x01)
+	}
+	p.buffer = append(p.buffer, 0x00)
+}
+
+func PackString(str string) []byte {
+	return append([]byte(str), StringTerminator)
 }
 
 func PackBool(b bool) []byte {
@@ -130,60 +92,7 @@ func PackBool(b bool) []byte {
 }
 
 func PackInt(num int) []byte {
-	res := []byte{0x00}
-	idx := 0
-	if num < 0 {
-		res[0] |= 0x40 // set sign bit
-		num = ^num
-	}
-
-	res[0] |= byte(num & 0x3F) // pack 6 bit into dst
-	num >>= 6                  // discard 6 bits
-	for num != 0 {
-		res = append(res, 0x00)
-
-		res[idx] |= 0x80 // set extend bit
-		idx++
-		res[idx] = byte(num & 0x7F) // pack 7 bit
-		num >>= 7                   // discard 7 bits
-	}
-
-	return res
-}
-
-func UnpackInt(data []byte) int {
-	sign := int(data[0]>>6) & 1
-	res := int(data[0] & 0x3F)
-	i := 0
-	// fake loop should only loop once
-	// its the poor mans goto hack
-	for {
-		if (data[i] & 0x80) == 0 {
-			break
-		}
-		i += 1
-		res |= int(data[i]&0x7F) << 6
-
-		if (data[i] & 0x80) == 0 {
-			break
-		}
-		i += 1
-		res |= int(data[i]&0x7F) << (6 + 7)
-
-		if (data[i] & 0x80) == 0 {
-			break
-		}
-		i += 1
-		res |= int(data[i]&0x7F) << (6 + 7 + 7)
-
-		if (data[i] & 0x80) == 0 {
-			break
-		}
-		i += 1
-		res |= int(data[i]&0x7F) << (6 + 7 + 7 + 7)
-		break
-	}
-
-	res ^= -sign
-	return res
+	result := make([]byte, 0, varint.MaxVarintLen32)
+	result = varint.AppendVarint(result, num)
+	return result
 }

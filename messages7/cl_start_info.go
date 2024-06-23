@@ -1,15 +1,14 @@
 package messages7
 
 import (
-	"slices"
-
 	"github.com/teeworlds-go/go-teeworlds-protocol/chunk7"
 	"github.com/teeworlds-go/go-teeworlds-protocol/network7"
 	"github.com/teeworlds-go/go-teeworlds-protocol/packer"
+	"github.com/teeworlds-go/go-teeworlds-protocol/varint"
 )
 
 type ClStartInfo struct {
-	ChunkHeader *chunk7.ChunkHeader
+	ChunkHeader chunk7.ChunkHeader
 
 	Name                  string
 	Clan                  string
@@ -51,59 +50,136 @@ func (info ClStartInfo) Vital() bool {
 }
 
 func (info ClStartInfo) Pack() []byte {
-	return slices.Concat(
-		packer.PackStr(info.Name),
-		packer.PackStr(info.Clan),
-		packer.PackInt(info.Country),
-		packer.PackStr(info.Body),
-		packer.PackStr(info.Marking),
-		packer.PackStr(info.Decoration),
-		packer.PackStr(info.Hands),
-		packer.PackStr(info.Feet),
-		packer.PackStr(info.Eyes),
-		packer.PackBool(info.CustomColorBody),
-		packer.PackBool(info.CustomColorMarking),
-		packer.PackBool(info.CustomColorDecoration),
-		packer.PackBool(info.CustomColorHands),
-		packer.PackBool(info.CustomColorFeet),
-		packer.PackBool(info.CustomColorEyes),
-		packer.PackInt(info.ColorBody),
-		packer.PackInt(info.ColorMarking),
-		packer.PackInt(info.ColorDecoration),
-		packer.PackInt(info.ColorHands),
-		packer.PackInt(info.ColorFeet),
-		packer.PackInt(info.ColorEyes),
-	)
+	p := packer.NewPacker(make([]byte,
+		0,
+		7*varint.MaxVarintLen32+ // int
+			6+ // bool
+			len(info.Name)+1+
+			len(info.Clan)+1+
+			len(info.Body)+1+
+			len(info.Marking)+1+
+			len(info.Decoration)+1+
+			len(info.Hands)+1+
+			len(info.Feet)+1+
+			len(info.Eyes)+1,
+	))
+
+	p.AddString(info.Name)
+	p.AddString(info.Clan)
+	p.AddInt(info.Country)
+	p.AddString(info.Body)
+	p.AddString(info.Marking)
+	p.AddString(info.Decoration)
+	p.AddString(info.Hands)
+	p.AddString(info.Feet)
+	p.AddString(info.Eyes)
+	p.AddBool(info.CustomColorBody)
+	p.AddBool(info.CustomColorMarking)
+	p.AddBool(info.CustomColorDecoration)
+	p.AddBool(info.CustomColorHands)
+	p.AddBool(info.CustomColorFeet)
+	p.AddBool(info.CustomColorEyes)
+	p.AddInt(info.ColorBody)
+	p.AddInt(info.ColorMarking)
+	p.AddInt(info.ColorDecoration)
+	p.AddInt(info.ColorHands)
+	p.AddInt(info.ColorFeet)
+	p.AddInt(info.ColorEyes)
+	return p.Bytes()
 }
 
-func (info *ClStartInfo) Unpack(u *packer.Unpacker) {
-	info.Name = u.GetString()
-	info.Clan = u.GetString()
-	info.Country = u.GetInt()
-	info.Body = u.GetString()
-	info.Marking = u.GetString()
-	info.Decoration = u.GetString()
-	info.Hands = u.GetString()
-	info.Feet = u.GetString()
-	info.Eyes = u.GetString()
-	info.CustomColorBody = u.GetInt() != 0
-	info.CustomColorMarking = u.GetInt() != 0
-	info.CustomColorDecoration = u.GetInt() != 0
-	info.CustomColorHands = u.GetInt() != 0
-	info.CustomColorFeet = u.GetInt() != 0
-	info.CustomColorEyes = u.GetInt() != 0
-	info.ColorBody = u.GetInt()
-	info.ColorMarking = u.GetInt()
-	info.ColorDecoration = u.GetInt()
-	info.ColorHands = u.GetInt()
-	info.ColorFeet = u.GetInt()
-	info.ColorEyes = u.GetInt()
+func (info *ClStartInfo) Unpack(u *packer.Unpacker) (err error) {
+	info.Name, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Clan, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Country, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.Body, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Marking, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Decoration, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Hands, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Feet, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.Eyes, err = u.NextString()
+	if err != nil {
+		return err
+	}
+	info.CustomColorBody, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorMarking, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorDecoration, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorHands, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorFeet, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.CustomColorEyes, err = u.NextBool()
+	if err != nil {
+		return err
+	}
+	info.ColorBody, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorMarking, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorDecoration, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorHands, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorFeet, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	info.ColorEyes, err = u.NextInt()
+	if err != nil {
+		return err
+	}
+	return err
 }
 
 func (msg *ClStartInfo) Header() *chunk7.ChunkHeader {
-	return msg.ChunkHeader
+	return &msg.ChunkHeader
 }
 
-func (msg *ClStartInfo) SetHeader(header *chunk7.ChunkHeader) {
+func (msg *ClStartInfo) SetHeader(header chunk7.ChunkHeader) {
 	msg.ChunkHeader = header
 }

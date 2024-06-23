@@ -3,12 +3,15 @@ package packer
 import (
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // pack
 
 func TestPackEmptyString(t *testing.T) {
-	got := PackStr("")
+
+	got := PackString("")
 	want := []byte{0x00}
 
 	if !reflect.DeepEqual(got, want) {
@@ -17,7 +20,7 @@ func TestPackEmptyString(t *testing.T) {
 }
 
 func TestPackSimpleString(t *testing.T) {
-	got := PackStr("foo")
+	got := PackString("foo")
 	want := []byte{'f', 'o', 'o', 0x00}
 
 	if !reflect.DeepEqual(got, want) {
@@ -99,47 +102,39 @@ func TestPackMultiByteNegativeInts(t *testing.T) {
 // unpack
 
 func TestUnpackSmallPositiveInts(t *testing.T) {
-	got := UnpackInt([]byte{0x01})
+
+	require := require.New(t)
 	want := 1
+	got, err := UnpackInt([]byte{0x01})
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = UnpackInt([]byte{0x02})
 	want = 2
+	got, err = UnpackInt([]byte{0x02})
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = UnpackInt([]byte{0x03})
 	want = 3
+	got, err = UnpackInt([]byte{0x03})
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
 }
 
 func TestUnpackMultiBytePositiveInts(t *testing.T) {
-	got := UnpackInt([]byte{0x3f})
+	require := require.New(t)
 	want := 63
+	got, err := UnpackInt([]byte{0x3f})
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = UnpackInt([]byte{0x80, 0x01})
 	want = 64
+	got, err = UnpackInt([]byte{0x80, 0x01})
+	require.NoError(err)
+	require.Equal(want, got)
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
-
-	got = UnpackInt([]byte{0x81, 0x01})
 	want = 65
-
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("got %v, wanted %v", got, want)
-	}
+	got, err = UnpackInt([]byte{0x81, 0x01})
+	require.NoError(err)
+	require.Equal(want, got)
 }
